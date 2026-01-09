@@ -1,5 +1,6 @@
 const {isValidPassword, isValidEmail} = require("../utils/validator.js");
 const {compare,hash} = require('../utils/hash.js');
+const {createJwt} = require('../utils/jwt.js');
 const db = require('../config/db.js');
 const authRegisterController = async (req,res) => {
     try {
@@ -45,18 +46,18 @@ const authLoginController = async (req,res) => {
         if (!isValidEmail(email)){
             return res.status(422).json({message:"Invalid email format"});
         }
-        const userData = await db.query('SELECT email, password from users WHERE email=$1', [email]);
+        const userData = await db.query('SELECT id, password from users WHERE email=$1', [email]);
         if (userData.rows.length === 0){
             return res.status(401).json({message:"Wrong email or password"});
         }
         if(await compare(password, userData.rows[0].password)){
-            return res.status(200).json({message:"Successfully Logined"});
+            const token = createJwt(userData.rows[0].id);
+            return res.status(200).json({message:"Successfully Logined",token:token});
         }
         else{
             return res.status(401).json({message:"Wrong email or password"});
         }
     } catch (err) {
-        console.log(err)
         return res.status(500).json({message:"Error"});
     }
 }
