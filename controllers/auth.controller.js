@@ -1,5 +1,5 @@
 const {isValidPassword, isValidEmail} = require("../utils/validator.js");
-const hash = require('../utils/hash.js');
+const {compare,hash} = require('../utils/hash.js');
 const db = require('../config/db.js');
 const authRegisterController = async (req,res) => {
     try {
@@ -32,4 +32,33 @@ const authRegisterController = async (req,res) => {
     }
 }
 
-module.exports = authRegisterController;
+const authLoginController = async (req,res) => {
+    try {
+        const email = req.body.email;
+        const password = req.body.password;
+        if(!email){
+            return res.status(400).json({message:"Email is required"});
+        }
+        if (!password){
+            return res.status(400).json({message:"Password is required"});
+        }
+        if (!isValidEmail(email)){
+            return res.status(422).json({message:"Invalid email format"});
+        }
+        const userData = await db.query('SELECT email, password from users WHERE email=$1', [email]);
+        if (userData.rows.length === 0){
+            return res.status(401).json({message:"Wrong email or password"});
+        }
+        if(await compare(password, userData.rows[0].password)){
+            return res.status(200).json({message:"Successfully Logined"});
+        }
+        else{
+            return res.status(401).json({message:"Wrong email or password"});
+        }
+    } catch (err) {
+        console.log(err)
+        return res.status(500).json({message:"Error"});
+    }
+}
+
+module.exports = {authRegisterController, authLoginController};
