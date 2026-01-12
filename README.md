@@ -122,10 +122,11 @@ SECRET_KEY=your_jwt_secret
 BASE_URL=http://localhost:3000
 
 RESEND_API_KEY=your_resend_api_key
-
+```
 ---
 
 npm install
+
 npm run dev
 
 ---
