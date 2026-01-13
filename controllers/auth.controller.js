@@ -132,4 +132,66 @@ const authResendVerificationController = async (req,res) => {
     }
 
 }
-module.exports = {authRegisterController, authLoginController, authVerifyController, authResendVerificationController};
+
+const authForgotPasswordController = async (req,res) => {
+    try {
+        const email = req.body.email;
+    if(!email){
+        return res.status(400).json({message:"Email is required"});
+    }
+    if (!isValidEmail(email)){
+        return res.status(422).json({message:"Invalid email format"});
+    }
+    const userData = await db.query('SELECT email from users WHERE email=$1', [email]);
+    if(userData.rows.length === 0){
+        return res.status(200).json({message:"If this email exists, a reset link has been sent"});
+    }
+    if(email === userData.rows[0].email){
+        const token = createToken();
+        const resetExpires = new Date(Date.now() + 60 * 60 * 1000);
+        await db.query('UPDATE users SET reset_token=$1 ,reset_expires=$2 WHERE email=$3',[token, resetExpires,email]);
+        const resetLink = `${process.env.BASE_URL}/auth/reset-password?token=${token}`;
+           await resend.emails.send({
+  from: 'Auth <onboarding@resend.dev>',
+  to: email,
+  subject: 'Reset your password',
+  html: `<a href="${resetLink}">Reset your password</a>`
+});
+        return res.status(200).json({
+        message: "If this email exists, a reset link has been sent"
+        });
+    }
+    } catch (error) {
+        return res.status(500).json({message:"Error"});
+    }
+    
+}
+
+const authResetPasswordController = async (req,res) => {
+    try {
+    const token = req.body.token;
+    if(!token){
+        return res.status(400).json({message:"Token is required"})
+    }
+    const tokenData = await db.query("SELECT id,email, reset_expires from users WHERE reset_token=$1", [token]);
+    if(tokenData.rows.length===0){
+        return res.status(400).json({message:"Invalid token"});
+    }
+    if (new Date(tokenData.rows[0].reset_expires) < new Date()){
+        return res.status(400).json({message:"Token expired"});
+    }
+    const newPassword = req.body.password;
+    if (!newPassword){
+        return res.status(400).json({message:"Password is required"});
+    }
+    if (!isValidPassword(newPassword)){
+        return res.status(422).json({message:"Invalid password format"});
+    }
+    const hashedPassword = await hash(newPassword);
+    await db.query("UPDATE users SET password=$1, reset_token=NULL, reset_expires=NULL WHERE reset_token=$2", [hashedPassword,token]);
+    return res.status(201).json({ message: 'Password reset successfully' });
+   } catch (err) {
+        return res.status(500).json({ message: 'Error' });
+   }
+}
+module.exports = {authRegisterController, authLoginController, authVerifyController, authResendVerificationController,authForgotPasswordController,authResetPasswordController};
