@@ -19,7 +19,7 @@ This project implements a **production-style authentication system** including:
 - Resend verification email
 - Login with **JWT**
 - Protected routes via auth middleware
-- User profile endpoint
+- User profile endpoint 
 - Change password (authenticated)
 - Forgot password (email reset link)
 - Reset password with token validation
@@ -177,6 +177,7 @@ CREATE TABLE users (
 
 ---
 
+## 🔐 Environment Variables
 ```env
 PORT=3000
 
@@ -192,12 +193,15 @@ BASE_URL=http://localhost:3000
 RESEND_API_KEY=your_resend_api_key
 
 ```
-
 ---
 
+## 📦 Installation
+
 npm install
+
 npm run dev
 
+---
 
 ## 🧠 Security Notes
 
